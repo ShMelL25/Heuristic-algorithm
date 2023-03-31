@@ -1,3 +1,7 @@
+import numpy as np
+import pandas as pd
+import random
+
 class FSS(object):
     
     def __init__(self):
@@ -87,9 +91,9 @@ class FSS(object):
                 a = random.randint(-1,0)
                 b = random.randint(0,1)
                     
-                x_new_coord.append(x[i[step]+a][step_j+b])
-                y_new_coord.append(y[i[step]+a][step_j+b])
-                z_new_coord.append(z[i[step]+a][step_j+b])
+                x_new_coord.append(x[i[step]+a][j[step]+b])
+                y_new_coord.append(y[i[step]+a][j[step]+b])
+                z_new_coord.append(z[i[step]+a][j[step]+b])
                 i_new.append(i[step]+a)
                 j_new.append(j[step]+b)
                     
@@ -164,5 +168,22 @@ class FSS(object):
         i_j_new = np.array([i_new, j_new])
         return x_new_coord, y_new_coord, z_new_coord, i_j_new
         
+
+def f(x1,x2):
+    a=np.sqrt(np.fabs(x2+x1/2+47))
+    b=np.sqrt(np.fabs(x1-(x2+47)))
+    c=-(x2+47)*np.sin(a)-x1*np.sin(b)
     
+    return c
+
 FSS_alg = FSS()
+
+x1=np.linspace(-512,512,100)
+x2=np.linspace(-512,512,100)
+X1,X2=np.meshgrid(x1,x2)
+
+c = f(X1,X2)
+i, j = FSS_alg.fish(x=X1, y=X2, z=c)
+
+print(i)
+print(j)
