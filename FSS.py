@@ -38,8 +38,8 @@ class FSS(object):
             j = random.randint(0, len(x[i])-1)
 
             x_1.append(x[i][j])
-            y_1.append(x[i][j])
-            z_1.append(x[i][j])
+            y_1.append(y[i][j])
+            z_1.append(z[i][j])
             
             i_mass.append(i)
             j_mass.append(j)
