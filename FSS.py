@@ -23,6 +23,7 @@ class FSS(object):
         return i_j, i_j_new
         
         
+    # initialization fish
     def fish_init(self, x, y, z, populationSize):
         x_1 = []
         y_1 = []
@@ -37,8 +38,8 @@ class FSS(object):
             j = random.randint(0, len(x[i])-1)
 
             x_1.append(x[i][j])
-            y_1.append(x[i][j])
-            z_1.append(x[i][j])
+            y_1.append(y[i][j])
+            z_1.append(z[i][j])
             
             i_mass.append(i)
             j_mass.append(j)
@@ -47,13 +48,14 @@ class FSS(object):
         
         return x_1, y_1, z_1, i_j
         
-    
+    #fish weight
     def weight(self,x, y, z, i_j, weightScale):
         
         weight_fish=weightScale/2
         
         return weight_fish
     
+    #step fish
     def step_fish(self, x, y, z, i, j):
         
         x_new_coord = []
