@@ -49,8 +49,10 @@ class FSS(object):
             
         
         coord_mass = np.array(coord_mass)
+        min_coord_z = np.min(coord_mass[len(coord_mass)-1][2])
+        
             
-        return coord_mass
+        return coord_mass, min_coord_z
         
     def fish_init_(self, coord, populationSize):
         x, y, z = coord[0], coord[1], coord[2]
