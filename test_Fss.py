@@ -19,8 +19,8 @@ x1=np.linspace(-512,512,100)
 x2=np.linspace(-512,512,100)
 X1,X2=np.meshgrid(x1,x2)
 c = f(X1,X2)
-mass_coord, min_coord = FSS_.fish(x=X1, y=X2, z=c, populationSize=1000, iterationCount=1000, individStep=1)
-print(min_coord)
+mass_coord, mean_, min_ = FSS_.fish(x=X1, y=X2, z=c, populationSize=1000, iterationCount=300, individStep=1)
+print(min_)
 
 def plotter(E,A): 
     fig=plt.figure()

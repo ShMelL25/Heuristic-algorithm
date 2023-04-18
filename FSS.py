@@ -18,12 +18,14 @@ class FSS(object):
     def fish(self, x, y, z, populationSize=200, iterationCount=100, individStep = 1, weightScale = 500):
         
         coord_mass = []
+        coord_mean_mass = []
         
         coord_fish_start, i_j_coord = self.fish_init_(coord = [x,y,z], populationSize = populationSize) # inizialisation
         
         coord_fish_one = coord_fish_start
         
         coord_mass.append(coord_fish_start)
+        coord_mean_mass.append(np.mean(coord_fish_start[2]))
 
         for i in tqdm(range(0,iterationCount)):
             
@@ -46,13 +48,14 @@ class FSS(object):
             coord_fish_one, i_j_coord = self.coll_step(coord = [x, y, z], i_j = i_j_coord, z_coord = coord_fish_one, individStep = individStep, bary_center = bary_c)
             
             coord_mass.append(coord_fish_one)
+            coord_mean_mass.append(np.mean(coord_fish_one[2]))
             
         
         coord_mass = np.array(coord_mass)
         min_coord_z = np.min(coord_mass[len(coord_mass)-1][2])
         
             
-        return coord_mass, min_coord_z
+        return coord_mass, coord_mean_mass, min_coord_z
         
     def fish_init_(self, coord, populationSize):
         x, y, z = coord[0], coord[1], coord[2]
@@ -243,6 +246,7 @@ class FSS(object):
         sum_weight = np.sum(weight)
         
         bary = z_sum/sum_weight
+        #print(bary)
         
         return bary
     
@@ -308,6 +312,10 @@ class FSS(object):
         
                     
         return coord_new, i_j_new
+        
+            
+
+
         
             
 
