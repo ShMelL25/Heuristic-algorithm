@@ -7,7 +7,7 @@ from tqdm import tqdm
 class FSS(object):
     
     def __init__(self):
-        self.fish
+        self.init
         self.fish_init_
         self.fish_step
         self.delta_f
@@ -15,7 +15,7 @@ class FSS(object):
         self.instinctive_collective_step
         self.coll_step
         
-    def fish(self, x, y, z, populationSize=200, iterationCount=100, individStep = 1, weightScale = 500):
+    def init(self, x, y, z, populationSize=200, iterationCount=100, individStep = 1, weightScale = 500):
         
         coord_mass = []
         coord_mean_mass = []
