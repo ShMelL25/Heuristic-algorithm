@@ -15,48 +15,6 @@ class FSS(object):
         self.instinctive_collective_step
         self.coll_step
         
-    def init(self, x, y, z, populationSize=200, iterationCount=100, individStep = 1, weightScale = 500):
-        
-        coord_mass = []
-        coord_mean_mass = []
-        
-        coord_fish_start, i_j_coord = self.fish_init_(coord = [x,y,z], populationSize = populationSize) # inizialisation
-        
-        coord_fish_one = coord_fish_start
-        
-        coord_mass.append(coord_fish_start)
-        coord_mean_mass.append(np.mean(coord_fish_start[2]))
-
-        for i in tqdm(range(0,iterationCount)):
-            
-            coord_fish, i_j_coord = self.fish_step(coord = [x, y, z], i_j = i_j_coord, individStep = individStep)
-            
-            #coord_mass.append(coord_fish)
-
-            weightScale, delta_mass = self.weight(z_coord = [coord_fish_one[2], coord_fish[2]], weightScale = weightScale)
-            
-            coord_fish_one, i_j_coord = self.instinctive_collective_step(coord = [x, y, z], i_j = i_j_coord, z_coord = [coord_fish_one[2], coord_fish[2]])
-            
-            #coord_mass.append(coord_fish_one)
-            
-            weightScale, delta_mass = self.weight(z_coord = [coord_fish_one[2], coord_fish[2]], weightScale = weightScale)
-            
-            bary_c = self.barycenter(z_coord = coord_fish_one, weight = weightScale)
-            
-            coord_fish = coord_fish_one
-            
-            coord_fish_one, i_j_coord = self.coll_step(coord = [x, y, z], i_j = i_j_coord, z_coord = coord_fish_one, individStep = individStep, bary_center = bary_c)
-            
-            coord_mass.append(coord_fish_one)
-            coord_mean_mass.append(np.mean(coord_fish_one[2]))
-            
-        
-        coord_mass = np.array(coord_mass)
-        min_coord_z = np.min(coord_mass[len(coord_mass)-1][2])
-        
-            
-        return coord_mass, coord_mean_mass, min_coord_z
-        
     def fish_init_(self, coord, populationSize):
         x, y, z = coord[0], coord[1], coord[2]
         x_1 = []
@@ -145,14 +103,13 @@ class FSS(object):
     def weight(self, z_coord, weightScale):
         
         delta = self.delta_f(z_coord = z_coord)
+        weight_mass = []
         
         delta_max = np.max(delta)
         
         if delta_max == 0:
             delta_max = 1
         
-        weight_mass = []
-        #print(delta_max)
         if type(weightScale) == int:
             
             for i in range(0, len(z_coord[0])):
@@ -189,8 +146,6 @@ class FSS(object):
             
         m = np.sum(d)/delt
         m = int(m)
-        #print(m, np.sum(delta))
-        
         
         x_new = []
         y_new = []
@@ -246,7 +201,6 @@ class FSS(object):
         sum_weight = np.sum(weight)
         
         bary = z_sum/sum_weight
-        #print(bary)
         
         return bary
     
@@ -265,11 +219,6 @@ class FSS(object):
                 coord_new.append(0)
             else:
                 coord_new.append(round(step))
-            
-        
-        
-        #print(coord_new)
-            
             
         x_new = []
         y_new = []
@@ -312,6 +261,47 @@ class FSS(object):
         
                     
         return coord_new, i_j_new
+    
+    
+    def init(self, x, y, z, populationSize=200, iterationCount=100, individStep = 1, weightScale = 500):
+        
+        coord_mass = []
+        coord_mean_mass = []
+        coord_min_mass = []
+        
+        coord_fish_start, i_j_coord = self.fish_init_(coord = [x,y,z], populationSize = populationSize) # inizialisation
+        
+        coord_fish_one = coord_fish_start
+        
+        coord_mass.append(coord_fish_start)
+        coord_mean_mass.append(np.mean(coord_fish_start[2]))
+
+        for i in tqdm(range(0,iterationCount)):
+            
+            coord_fish, i_j_coord = self.fish_step(coord = [x, y, z], i_j = i_j_coord, individStep = individStep)
+
+            weightScale, delta_mass = self.weight(z_coord = [coord_fish_one[2], coord_fish[2]], weightScale = weightScale)
+            
+            coord_fish_one, i_j_coord = self.instinctive_collective_step(coord = [x, y, z], i_j = i_j_coord, z_coord = [coord_fish_one[2], coord_fish[2]])
+            
+            weightScale, delta_mass = self.weight(z_coord = [coord_fish_one[2], coord_fish[2]], weightScale = weightScale)
+            
+            bary_c = self.barycenter(z_coord = coord_fish_one, weight = weightScale)
+            
+            coord_fish = coord_fish_one
+            
+            coord_fish_one, i_j_coord = self.coll_step(coord = [x, y, z], i_j = i_j_coord, z_coord = coord_fish_one, individStep = individStep, bary_center = bary_c)
+            
+            coord_mass.append(coord_fish_one)
+            coord_mean_mass.append(np.mean(coord_fish_one[2]))
+            coord_min_mass.append(np.mean(coord_fish_one[2]))
+            
+        
+        coord_mass = np.array(coord_mass)
+        min_coord_z = np.min(coord_mass[len(coord_mass)-1][2])
+        
+            
+        return coord_mass, coord_mean_mass, min_coord_z
         
             
 
