@@ -1,8 +1,8 @@
 import numpy as np
 import random
 import math
-from numpy. linalg import norm
-from tqdm import tqdm 
+from numpy.linalg import norm
+from tqdm.auto import tqdm 
 
 class FSS(object):
     
@@ -300,7 +300,7 @@ class FSS(object):
         coord_mass = np.array(coord_mass)
         min_coord_z = np.min(coord_mass[len(coord_mass)-1][2])
         
-            
+        
         return coord_mass, coord_mean_mass, min_coord_z
         
             

@@ -13,11 +13,11 @@ def f(x1,x2):
     
     return c
 
-x1=np.linspace(-512,512,100)
-x2=np.linspace(-512,512,100)
+x1=np.linspace(-1000,1000,100)
+x2=np.linspace(-1000,1000,100)
 X1,X2=np.meshgrid(x1,x2)
 c = f(X1,X2)
-mass_coord, mean_, min_ = FSS().init(x=X1, y=X2, z=c, populationSize=1000, iterationCount=300, individStep=1)
+mass_coord, mean_, min_ = FSS().init(x=X1, y=X2, z=c, populationSize=100000, iterationCount=300, individStep=1)
 print(min_)
 
 def plotter(E,A): 
