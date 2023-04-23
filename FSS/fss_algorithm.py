@@ -263,7 +263,7 @@ class FSS(object):
         return coord_new, i_j_new
     
     
-    def init(self, x, y, z, populationSize=200, iterationCount=100, individStep = 1, weightScale = 500):
+    def init(self, x, y, z, populationSize, iterationCount, individStep, weightScale):
         
         coord_mass = []
         coord_mean_mass = []
