@@ -1,311 +1,226 @@
 import numpy as np
-import random
-import math
 from numpy.linalg import norm
-from tqdm.auto import tqdm 
+from typing import List, Tuple, Callable
+from tqdm.auto import tqdm
 
-class FSS(object):
-    
+class FishSchoolSearch:
     def __init__(self):
-        self.init
-        self.fish_init_
-        self.fish_step
-        self.delta_f
-        self.weight
-        self.instinctive_collective_step
-        self.coll_step
-        
-    def fish_init_(self, coord, populationSize):
-        x, y, z = coord[0], coord[1], coord[2]
-        x_1 = []
-        y_1 = []
-        z_1 = []
-        
-        i_mass = []
-        j_mass = []
+        """Initialize the Fish School Search optimizer"""
+        self.history = {'positions': [], 'fitness': []}  # Optimization history
+        self.best_position = None      # Best solution found
+        self.best_fitness = float('inf')  # Best fitness value
+        self.prev_total_weight = 0.0   # Total weight from previous iteration
 
-        for a in range(0, populationSize):
+    def _initialize_population(self, population_size: int, 
+                             search_space: List[Tuple[float, float]]) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Initialize fish population within search space boundaries
+        
+        Args:
+            population_size: Number of fish in the population
+            search_space: List of (min, max) tuples for each dimension
+            
+        Returns:
+            Tuple of (positions, velocities) arrays
+        """
+        dimensions = len(search_space)
+        
+        # Generate random positions within bounds
+        positions = np.vstack([
+            np.random.uniform(low, high, population_size)
+            for low, high in search_space
+        ])
+        
+        # Initialize velocities (1% of each dimension's range)
+        velocity_scales = 0.01 * np.array([high - low for low, high in search_space])
+        velocities = np.random.uniform(-1, 1, (dimensions, population_size)) * velocity_scales[:, np.newaxis]
+        
+        return positions, velocities
 
-            i = random.randint(0, len(x)-1)
-            j = random.randint(0, len(x[i])-1)
+    def _evaluate_fitness(self, positions: np.ndarray, 
+                         fitness_func: Callable[[np.ndarray], float]) -> np.ndarray:
+        """
+        Evaluate fitness for all fish
+        
+        Args:
+            positions: Current fish positions (dimensions × population_size)
+            fitness_func: Function to minimize
+            
+        Returns:
+            Array of fitness values (population_size,)
+        """
+        return np.array([fitness_func(pos) for pos in positions.T])
 
-            x_1.append(x[i][j])
-            y_1.append(y[i][j])
-            z_1.append(z[i][j])
+    def _update_velocities(self, velocities: np.ndarray, 
+                          positions: np.ndarray,
+                          search_space: List[Tuple[float, float]],
+                          step_size: float) -> np.ndarray:
+        """
+        Update fish velocities with random movement
+        
+        Args:
+            velocities: Current velocities
+            positions: Current positions
+            search_space: Search space boundaries
+            step_size: Movement step size
             
-            i_mass.append(i)
-            j_mass.append(j)
-        
-        fish_coord = np.array([x_1, y_1, z_1])
-        i_j_coord = np.array([i_mass, j_mass])
-        
-        return fish_coord, i_j_coord
-    
-    
-    def fish_step(self, coord, i_j, individStep):
-        
-        a = random.randint(-1,1)
-        b = random.randint(-1,1)
-        
-        x_new = []
-        y_new = []
-        z_new = []
-        i_new = []
-        j_new = []
-        
-        x, y, z = coord[0], coord[1], coord[2]
-        i, j = i_j[0], i_j[1]
-        
-        for step in range(0,len(i)):
-            
-            if (i[step]+a < len(z) and j[step]+b < len(z) and i[step]+a >= 0 and j[step]+b >= 0):
-                
-                if z[i[step]+a][j[step]+b] < z[i[step]][j[step]]:
-                    
-                    x_new.append(x[i[step]+a][j[step]+b])
-                    y_new.append(y[i[step]+a][j[step]+b])
-                    z_new.append(z[i[step]+a][j[step]+b])
-                    i_new.append(i[step]+a)
-                    j_new.append(j[step]+b)
-                    
-                else:
-                    x_new.append(x[i[step]][j[step]])
-                    y_new.append(y[i[step]][j[step]])
-                    z_new.append(z[i[step]][j[step]])
-                    i_new.append(i[step])
-                    j_new.append(j[step])
-                    
-            else:
-                    
-                x_new.append(x[i[step]][j[step]])
-                y_new.append(y[i[step]][j[step]])
-                z_new.append(z[i[step]][j[step]])
-                i_new.append(i[step])
-                j_new.append(j[step])
-                    
-        coord_new = np.array([x_new, y_new, z_new])
-        i_j_new = np.array([i_new, j_new])
-        
-                    
-        return coord_new, i_j_new
-    
-    
-    def delta_f(self, z_coord):
-        
-        delta = []
-        
-        for i in range(0, len(z_coord[0])):
-            z_ = (z_coord[0][i] - z_coord[1][i])
-            delta.append(z_)
-            
-        return delta
-    
-    def weight(self, z_coord, weightScale):
-        
-        delta = self.delta_f(z_coord = z_coord)
-        weight_mass = []
-        
-        delta_max = np.max(delta)
-        
-        if delta_max == 0:
-            delta_max = 1
-        
-        if type(weightScale) == int:
-            
-            for i in range(0, len(z_coord[0])):
-                
-                d = (delta[i]/delta_max)+weightScale
+        Returns:
+            Updated velocities
+        """
+        # Limit maximum velocity to 5% of dimension range
+        max_velocity = 0.05 * np.array([high - low for low, high in search_space])[:, np.newaxis]
+        random_dir = np.random.uniform(-1, 1, positions.shape)
+        new_velocities = velocities + step_size * random_dir
+        return np.clip(new_velocities, -max_velocity, max_velocity)
 
-                weight_mass.append(d)
-                
+    def _calculate_weights(self, current_fitness: np.ndarray, 
+                         new_fitness: np.ndarray, 
+                         weight_scale: float) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Calculate fish weights based on fitness improvement
+        
+        Args:
+            current_fitness: Fitness before movement
+            new_fitness: Fitness after movement
+            weight_scale: Base weight scaling factor
+            
+        Returns:
+            Tuple of (weights, delta_fitness)
+        """
+        delta = current_fitness - new_fitness
+        delta_max = np.max(np.abs(delta)) if np.max(np.abs(delta)) > 0 else 1.0
+        weights = delta / delta_max + weight_scale
+        return weights, delta
+
+    def _instinctive_movement(self, positions: np.ndarray, 
+                            delta: np.ndarray,
+                            search_space: List[Tuple[float, float]]) -> np.ndarray:
+        """
+        Perform collective instinctive movement
+        
+        Args:
+            positions: Current positions
+            delta: Fitness improvements
+            search_space: Search space boundaries
+            
+        Returns:
+            New positions after instinctive movement
+        """
+        if np.sum(np.abs(delta)) > 0:
+            movement = np.sum(positions * delta, axis=1) / np.sum(delta)
+            new_positions = positions + movement[:, np.newaxis]
         else:
-            for i in range(0, len(z_coord[0])):
-                
-                d = (delta[i]/delta_max)+weightScale[i]
+            new_positions = positions.copy()
+        
+        return self._clip_to_bounds(new_positions, search_space)
 
-                weight_mass.append(d)
+    def _volitive_movement(self, positions: np.ndarray, 
+                         weights: np.ndarray,
+                         step_size: float,
+                         search_space: List[Tuple[float, float]]) -> np.ndarray:
+        """
+        Perform collective volitive movement (expansion/contraction)
+        
+        Args:
+            positions: Current positions
+            weights: Fish weights
+            step_size: Movement step size
+            search_space: Search space boundaries
+            
+        Returns:
+            New positions after volitive movement
+        """
+        # Calculate school barycenter
+        barycenter = np.sum(positions * weights, axis=1) / np.sum(weights)
+        distances = norm(positions - barycenter[:, np.newaxis], axis=0)
+        mean_dist = np.mean(distances)
+        
+        # Determine movement direction
+        if np.sum(weights) > self.prev_total_weight:
+            direction = barycenter[:, np.newaxis] - positions  # Contraction
+        else:
+            direction = positions - barycenter[:, np.newaxis]  # Expansion
+            
+        # Normalize direction and calculate step
+        norm_dir = direction / (norm(direction, axis=0)[np.newaxis, :])
+        step = step_size * (distances / mean_dist) * norm_dir
+        
+        return self._clip_to_bounds(positions + step, search_space)
 
+    def _clip_to_bounds(self, positions: np.ndarray, 
+                       search_space: List[Tuple[float, float]]) -> np.ndarray:
+        """
+        Clip positions to stay within search space bounds
         
-        return weight_mass, delta
-        
+        Args:
+            positions: Current positions
+            search_space: Search space boundaries
             
-        
-    def instinctive_collective_step(self, coord, i_j, z_coord):
-        
-        delta = self.delta_f(z_coord)
-        d = []
-        
-        delt = np.sum(delta)
-        if delt == 0:
-            delt = 0.1
-        
-        
-        for i in range(len(delta)):
-            
-            d.append(delta[i]**2)
-            
-        m = np.sum(d)/delt
-        m = int(m)
-        
-        x_new = []
-        y_new = []
-        z_new = []
-        i_new = []
-        j_new = []
-        
-        x, y, z = coord[0], coord[1], coord[2]
-        i, j = i_j[0], i_j[1]
-        
-        for step in range(0,len(i)):
-            
-            if (i[step]+m < len(z) and j[step]+m < len(z) and i[step]+m >= 0 and j[step]+m >= 0):
-                
-                if z[i[step]+m][j[step]+m] < z[i[step]][j[step]]:
-                    
-                    x_new.append(x[i[step]+m][j[step]+m])
-                    y_new.append(y[i[step]+m][j[step]+m])
-                    z_new.append(z[i[step]+m][j[step]+m])
-                    i_new.append(i[step]+m)
-                    j_new.append(j[step]+m)
-                    
-                else:
-                    x_new.append(x[i[step]][j[step]])
-                    y_new.append(y[i[step]][j[step]])
-                    z_new.append(z[i[step]][j[step]])
-                    i_new.append(i[step])
-                    j_new.append(j[step])
-                    
-            else:
-                    
-                x_new.append(x[i[step]][j[step]])
-                y_new.append(y[i[step]][j[step]])
-                z_new.append(z[i[step]][j[step]])
-                i_new.append(i[step])
-                j_new.append(j[step])
-                    
-        coord_new = np.array([x_new, y_new, z_new])
-        i_j_new = np.array([i_new, j_new])
-        
-                    
-        return coord_new, i_j_new
-        
-    def barycenter(self, z_coord, weight):
-        
-        z_wight = []
-        
-        for i in range(0, len(z_coord)):
-            
-            z_wight.append(z_coord)
-        
-        z_sum = np.sum(z_wight)
-        sum_weight = np.sum(weight)
-        
-        bary = z_sum/sum_weight
-        
-        return bary
-    
-    
-    def coll_step(self, coord, i_j, z_coord, individStep, bary_center):
-        
-        coord_new = []
-        
-        for i in range(len(i_j[1])):
-            
-            a = random.randint(0,1)
-            
-            step = (individStep**2)*a*((z_coord[2][i] - bary_center)/(norm(z_coord[2][i] - bary_center)))
-            
-            if math.isnan(step) == True:
-                coord_new.append(0)
-            else:
-                coord_new.append(round(step))
-            
-        x_new = []
-        y_new = []
-        z_new = []
-        i_new = []
-        j_new = []
-        
-        x, y, z = coord[0], coord[1], coord[2]
-        i, j = i_j[0], i_j[1]
-        
-        for step in range(0,len(i)):
-            
-            if (i[step]+coord_new[step] < len(z) and j[step]+coord_new[step] < len(z) and i[step]+coord_new[step] >= 0 and j[step]+coord_new[step] >= 0):
-                
-                if z[i[step]+coord_new[step]][j[step]+coord_new[step]] < z[i[step]][j[step]]:
-                    
-                    x_new.append(x[i[step]+coord_new[step]][j[step]+coord_new[step]])
-                    y_new.append(y[i[step]+coord_new[step]][j[step]+coord_new[step]])
-                    z_new.append(z[i[step]+coord_new[step]][j[step]+coord_new[step]])
-                    i_new.append(i[step]+coord_new[step])
-                    j_new.append(j[step]+coord_new[step])
-                    
-                else:
-                    x_new.append(x[i[step]][j[step]])
-                    y_new.append(y[i[step]][j[step]])
-                    z_new.append(z[i[step]][j[step]])
-                    i_new.append(i[step])
-                    j_new.append(j[step])
-                    
-            else:
-                    
-                x_new.append(x[i[step]][j[step]])
-                y_new.append(y[i[step]][j[step]])
-                z_new.append(z[i[step]][j[step]])
-                i_new.append(i[step])
-                j_new.append(j[step])
-                    
-        coord_new = np.array([x_new, y_new, z_new])
-        i_j_new = np.array([i_new, j_new])
-        
-                    
-        return coord_new, i_j_new
-    
-    
-    def init(self, x, y, z, populationSize, iterationCount, individStep, weightScale):
-        
-        coord_mass = []
-        coord_mean_mass = []
-        coord_min_mass = []
-        
-        coord_fish_start, i_j_coord = self.fish_init_(coord = [x,y,z], populationSize = populationSize) # inizialisation
-        
-        coord_fish_one = coord_fish_start
-        
-        coord_mass.append(coord_fish_start)
-        coord_mean_mass.append(np.mean(coord_fish_start[2]))
+        Returns:
+            Clipped positions
+        """
+        lows = np.array([dim[0] for dim in search_space])[:, np.newaxis]
+        highs = np.array([dim[1] for dim in search_space])[:, np.newaxis]
+        return np.clip(positions, lows, highs)
 
-        for i in tqdm(range(0,iterationCount)):
-            
-            coord_fish, i_j_coord = self.fish_step(coord = [x, y, z], i_j = i_j_coord, individStep = individStep)
-
-            weightScale, delta_mass = self.weight(z_coord = [coord_fish_one[2], coord_fish[2]], weightScale = weightScale)
-            
-            coord_fish_one, i_j_coord = self.instinctive_collective_step(coord = [x, y, z], i_j = i_j_coord, z_coord = [coord_fish_one[2], coord_fish[2]])
-            
-            weightScale, delta_mass = self.weight(z_coord = [coord_fish_one[2], coord_fish[2]], weightScale = weightScale)
-            
-            bary_c = self.barycenter(z_coord = coord_fish_one, weight = weightScale)
-            
-            coord_fish = coord_fish_one
-            
-            coord_fish_one, i_j_coord = self.coll_step(coord = [x, y, z], i_j = i_j_coord, z_coord = coord_fish_one, individStep = individStep, bary_center = bary_c)
-            
-            coord_mass.append(coord_fish_one)
-            coord_mean_mass.append(np.mean(coord_fish_one[2]))
-            coord_min_mass.append(np.mean(coord_fish_one[2]))
-            
+    def optimize(self, fitness_func: Callable[[np.ndarray], float], 
+                search_space: List[Tuple[float, float]], 
+                population_size: int = 50, 
+                iterations: int = 100,
+                individual_step: float = 0.1,
+                volitive_step: float = 0.05,
+                weight_scale: float = 1.0,
+                verbose: bool = True) -> Tuple[np.ndarray, float]:
+        """
+        Run the Fish School Search optimization
         
-        coord_mass = np.array(coord_mass)
-        min_coord_z = np.min(coord_mass[len(coord_mass)-1][2])
-        
-        
-        return coord_mass, coord_mean_mass, min_coord_z
-        
+        Args:
+            fitness_func: Function to minimize (accepts N-dim vector)
+            search_space: List of (min, max) tuples for each dimension
+            population_size: Number of fish in the school
+            iterations: Number of optimization iterations
+            individual_step: Individual movement step size
+            volitive_step: Volitive movement step size
+            weight_scale: Base weight scaling factor
+            verbose: Whether to show progress bar
             
-
-
+        Returns:
+            Tuple of (best_position, best_fitness)
+        """
+        # Initialize population
+        positions, velocities = self._initialize_population(population_size, search_space)
+        fitness = self._evaluate_fitness(positions, fitness_func)
         
+        # Set initial best solution
+        best_idx = np.argmin(fitness)
+        self.best_position = positions[:, best_idx].copy()
+        self.best_fitness = fitness[best_idx]
+        self.prev_total_weight = population_size * weight_scale
+        
+        # Optimization loop
+        for _ in tqdm(range(iterations), disable=not verbose):
+            # 1. Individual movement
+            velocities = self._update_velocities(velocities, positions, search_space, individual_step)
+            new_positions = self._clip_to_bounds(positions + velocities, search_space)
+            new_fitness = self._evaluate_fitness(new_positions, fitness_func)
             
-
+            # 2. Calculate weights
+            weights, delta = self._calculate_weights(fitness, new_fitness, weight_scale)
+            
+            # 3. Instinctive movement
+            instinctive_pos = self._instinctive_movement(new_positions, delta, search_space)
+            instinctive_fitness = self._evaluate_fitness(instinctive_pos, fitness_func)
+            
+            # 4. Update best solution
+            current_best_idx = np.argmin(instinctive_fitness)
+            if instinctive_fitness[current_best_idx] < self.best_fitness:
+                self.best_position = instinctive_pos[:, current_best_idx].copy()
+                self.best_fitness = instinctive_fitness[current_best_idx]
+            
+            # 5. Volitive movement
+            positions = self._volitive_movement(instinctive_pos, weights, volitive_step, search_space)
+            fitness = self._evaluate_fitness(positions, fitness_func)
+            
+            self.prev_total_weight = np.sum(weights)
+            
+        return self.best_position, self.best_fitness
