@@ -1,2 +1,7 @@
 numpy >= 1.24.1
 matplotlib >= 3.7.1
+tqdm
+ipywidgets
+torch 
+torchvision 
+torchaudio
